@@ -1,0 +1,78 @@
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Three test</title>
+  </head>
+
+  <body>
+
+      <div id="container"></div>
+
+  </body>
+
+  <!-- Vertex shader -->
+  <script type="x-shader/x-vertex" id="vertexshader">
+
+      // So here we define our variables. For this to work, the uniforms and attributes must
+      // be defined to match the uniforms and attributes we made in the js file exactly.
+      // But notice the attribute amount_of_red is a float, not an array. This is because this
+      // is run for each vertex seperately, and only one value from the attribute array we defined 
+      // in the javascript is fed in at a time (and the values in the array were floats!)
+      attribute float amount_of_red;
+      uniform float amount_of_blue;
+      uniform float amount_of_green;
+      
+      // So what are we doing with these? We are going make our own new colour variable within the
+      // the vertex shader. This will be a vector of length 4 (red, blue, green, alpha) (alpha is 
+      // the opacity, we'll just set this to 1) and will represent the vertex colour.
+
+      // Now here's where it gets a little complex. We will define a colour vector, as stated, but
+      // there's nothing attaching it to the actual vertex. This can be done, but is rarely done as
+      // the vertex colour is simpler to define when we build our mesh in the javascript. Also, the
+      // the vertex itself is just a corner point so colouring it on its own won't look very 
+      // dramatic. What we want is each vertex to have a unique colour which spills into each of 
+      // the faces around it. These faces are coloured by the fragment shader, so the fragment 
+      // shader needs to know the colour we want for each vertex. Here we have the perfect situation 
+      // for a varying variable (hmm!).
+      // Lets call our vector colour variable vColor. We will build it properly in the main shader
+      // function but now we know we want it to be passed to the fragment shader we should first 
+      // define it as a varying.
+      varying vec4 vColor;
+
+      void main()
+      {
+          // So now we can build it.
+          vColor = vec4(amount_of_red, amount_of_blue, amount_of_green, 1.0);
+          // Remeber the gl_Position HAS to be set. Like before, we are just setting it to its 
+          // current position.
+	  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+  </script>
+
+
+  <!-- Fragment shader -->
+  <script type="x-shader/x-fragment" id="fragmentshader">
+
+      // And now to the fragment shader. For the varying to work i.e. for the fragment shader to
+      // be able to see it, we have to define it in exactly the same way as in the vertex shader.
+      varying vec4 vColor;
+
+      void main()
+      {
+          // Clearly there's a lot of clever things going on under the bonnet, but rest assure,
+          // the fragment shader now knows about all the colours we've assigned to each vertex.
+          // As mentioned in guide 3, the fragment shader HAS to set gl_FragColor. Well, by giving
+          // it our varying variable vColor, for each fragment on each face, it takes the three 
+          // surrounding vertex colours, works out where it is in relation to each (near or far),
+          // and assigns that fragment an appropriately blended colour. Don't ask me how.
+	  gl_FragColor = vColor;
+      }
+  </script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="../threejs/build/three.min.js"></script>
+  <script src="three_guide4.js"></script>
+
+  </html>

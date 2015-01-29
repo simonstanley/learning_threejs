@@ -1,0 +1,55 @@
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Three test</title>
+  </head>
+
+  <body>
+
+      <div id="container"></div>
+
+  </body>
+  <!-- So here are the two shaders. We are going to make the simplist shaders possible. -->
+
+  <!-- Vertex shader -->
+  <script type="x-shader/x-vertex" id="vertexshader">
+      // Both shaders must have a main function.
+      void main()
+      {
+	  // The only thing the vertex shader has to do is set the position of each
+	  // vertex. For this simple case we set the position to its current 
+          // position. Yes this is stupid but it gives us a chance to introduce that 
+          // there are certain variables available, kindly provided to us by Three.js...
+          // Notice the script type, this is not recognised by html and so is not
+          // executed. Instead the script element is referenced in the javascript 
+          // (using its id) and passed to Three.js. Three.js then suppies this 
+          // function with a bunch of varibles which we can use.
+          // Here are 3 important ones, projectionMatrix, modelViewMatrix and position.
+          // What you see below is setting the position to its current position, the
+          // projectionMatrix and modelViewMatrix are used to convert our 3D position
+          // (given by the variable 'position') into a 2D projection for our screens.
+          // Hence, this is a very common line of code in vertex shaders (except that
+          // position may be a variable like newPosition which we've made ourselves).
+	  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+  </script>
+
+
+  <!-- Fragment shader -->
+  <script type="x-shader/x-fragment" id="fragmentshader">
+      void main()
+      {
+          // The only thing the fragment shader has to do is set the colour for each
+          // fragment. Here we set everything to white... I won't go into rbga codes in 
+          // this guide.
+	  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      }
+  </script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="../threejs/build/three.min.js"></script>
+  <script src="three_guide3.js"></script>
+
+</html>

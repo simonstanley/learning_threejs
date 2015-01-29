@@ -1,0 +1,65 @@
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Three test</title>
+  </head>
+
+  <body>
+
+      <div id="container"></div>
+
+  </body>
+
+  <!-- Shaders -->
+  <script type="x-shader/x-vertex" id="vertexshader">
+
+	  // switch on high precision floats
+	  #ifdef GL_ES
+	  precision highp float;
+	  #endif
+
+	  uniform float amplitude;
+	  uniform float displacement;
+	  varying vec3 vNormal;
+
+	  void main()
+	  {
+		  vNormal = normal;
+		  vec3 newPosition = position + normal * vec3(displacement * amplitude);
+		  gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition,1.0);
+	  }
+
+  </script>
+
+  <script type="x-shader/x-fragment" id="fragmentshader">
+
+	  #ifdef GL_ES
+	  precision highp float;
+	  #endif
+
+	  varying vec3 vNormal;
+
+	  void main()
+	  {
+		  vec3 light = vec3(0.5, 0.2, 1.0);
+		  // ensure it's normalized
+		  light = normalize(light);
+
+		  // calculate the dot product of
+		  // the light to the vertex normal
+		  float dProd = max(0.0,
+				    dot(vNormal, light));
+
+		  gl_FragColor 	= vec4(dProd,dProd,dProd,1.0);
+	  }
+
+  </script>
+  <!-- End Shaders -->
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="threejs/build/three.min.js"></script>
+  <script src="three_guide3.js"></script>
+
+</html>

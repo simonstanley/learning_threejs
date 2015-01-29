@@ -1,0 +1,129 @@
+<html lang="en">
+  <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Three test</title>
+  </head>
+
+  <body>
+
+      <div id="container"></div>
+
+  </body>
+
+  <!-- Vertex shader -->
+  <script type="x-shader/x-vertex" id="vertexshader">
+
+      // Here are our varibles described in guide 4.
+      attribute float amount_of_red;
+      uniform float amount_of_blue;
+      uniform float amount_of_green;
+      varying vec3 vColor;
+
+      // Now we are going to start introducing a huge part of 3D design, vector maths. As you might imagine,
+      // if we are going to adjust our colours according to their position in relation to the light, we'll
+      // need to know about the direction each face is facing (e.g. a face perpendicular to the light will
+      // be brighter than one at an angle to it, like midday vs sunset). The information on which way the 
+      // face is facing, i.e. its normal, is thankfully given to us by Three.js.. although, that's not 
+      // strictly true. Three.js gives us the normal of each vertex, which if you're like me doesn't make 
+      // much sense. How can a single point have a normal? Well, again Three.js has been kind, it has looked
+      // at all the faces that surround the given vertex, and returned the average, for example, if we had
+      // an egyptian pyrimid, the normal of the top point would be the avaerage of the normals of the sides
+      // which would basically result in a line straight up into the sky. I should say now that you don't need
+      // to know any of this but it helps to understand what's actually happening.
+      // Anyway, like with the colours in guide 4, it is the fragement shader that actually wants this 
+      // information and to pass it on we must make a varying variable, lets call it vNormal. 
+      varying vec3 vNormal;
+      // Note, Three.js defines normals with 3 dimensional vectors.
+
+      void main()
+      {
+          // Excellent, now lets put into that the normal attribute provided for us by Three.js, conveniently
+          // named, normal. 
+          vNormal = normal;
+          // I should say at this point, the reason we have assigned a new variable name is that you can 
+          // not modify uniforms, attributes or varyings in shaders. This is important to remember!
+
+          // Here's the colour and position stuff from guides 4 and 3 respectively.
+          vColor = vec3(amount_of_red, amount_of_blue, amount_of_green);
+	  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+  </script>
+
+
+  <!-- Fragment shader -->
+  <script type="x-shader/x-fragment" id="fragmentshader">
+
+      // Ok, here's where the magic happens. 
+      // Firstly, lets bring in the uniform light position vector we made in the js file.
+      uniform vec3 light;
+
+      // As mentioned in guide 4, for varyings to be passed properly, they must be defined in exactly the
+      // same way as in the vertex shader.
+      varying vec3 vNormal;
+      varying vec3 vColor;
+
+      void main()
+      {
+          // Now we need to do (get the computer to do) some maths.
+          // It is always a good idea to normalize vectors. Normalizing vectors simply means changing their
+          // length to 1. (In case you're like me, I should clarify there is a major difference between a 
+          // vertex and a vector, a vertex is a single position in space while a vector is an instruction
+          // of how to get from one spot to another, in other words it has a length and a direction but no 
+          // position. To clarify, if we had a vertex (1,1,1), it is a position in a 3D space. If we had a 
+          // vector (1,1,1) it tells us to go up 1, forward 1 and across 1.. It would get us to our vertex
+          // if we happened to be starting at (0,0,0)). Normalizing does not change the direction (the 
+          // important bit), it just sets the vectors length to one. You may have noticed that we called the
+          // the light a position i.e. a vertex (which helps us visualize that there is a light somewhere) 
+          // but for this we want its direction. Seeing as our cube is placed in position (0,0,0), like with 
+          // the above example, we can just call it a vector.
+          vec3 nlight = normalize(light);
+          // Again we have assigned a new variable name because we can not modify uniforms, attributes or 
+          // varyings in shaders.
+
+          // Now lets create our lighting effect.
+          // In the vertex shader I confused everything by stating that vNormal is the vertex normal, not
+          // the face normal. Basically forget all of that because the fragment shader looks at the three 
+          // vertices that surround each fragment, takes their normals, averages them and thus computes the
+          // the face's (and hence the fragement's) normal. This is done under the hood and the result is that
+          // we can think of vNormal as the face (hence fragment) normal, the original sensible assumption. 
+          // If you remember, in guide 4, a similar process was explained for the colouring of each fragment.
+
+          // Now here's the proper maths. We want to know the dot product, which is basically a single number
+          // which tells us something about the angle between the two vectors.
+          // A positive dot product means the directions are the same(ish) (both going up for example), a dot 
+          // product of 0 means they are at right angles with each other, and a negative dot product means 
+          // they are going in opposite directions(ish) (one going up, the other going down for example (not
+          // necessarily in parrallel)). This tells us the type of angle the light is hitting the surface.
+          // With normalized vectors the dot product range goes from -1 to 1.
+          // Now for more confusion. By changing our light defintion from a vertex to a vector we are acually 
+          // defining a stream of light moving away from where the cube is (it goes towards the vertex). Now, 
+          // we want to find where the light (in the orginal sense) is in the opposite direction to the normal 
+          // i.e. they are looking at each other, so the easiest solution is to this "light going away from 
+          // the cube" problem is to flip it and instead look for where the vectors are moving in the same 
+          // direction, i.e. a positive dot product. If it is 0 or negative then the light is not hitting 
+          // it so we can ignore those and just set them to 0.
+          float dProd = max(0.0, dot(vNormal, nlight));
+          // You may find it easier to originally set the light by thinking of it as a vector but you loose
+          // the notion of placing a light in the scene. Also, when it gets more complex you may want to
+          // involve how far away the light is from the cube and again this is easier to visualize as a 
+          // position especially if you want to animate the light position e.g. like the sun during a day.
+
+          // Now lets turn this number into shading. If you don't know, with rbg colours (0,0,0) is black
+          // and (1,1,1) is white. By varying the rbg numbers but keeping them the same as each other e.g.
+          // (0.5, 0.5, 0.5) you get shades of grey. By adjusting any set of rba numbers by the same ratio
+          // you get lighter or darker shades of whatever the original colour was. Perfect!
+          // Lets multiply our rba vector vColor by our dot product. We should note that with a dProd range 
+          // of 0 - 1, we are always going to darken our original colours, but lets not worry about that.
+          vec3 shaded_vColor = dProd * vColor;
+          // Finally set gl_FragColor to our new calculated colour and add on an opacity of 1.
+	  gl_FragColor = vec4(shaded_vColor, 1.0);
+      }
+  </script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="../threejs/build/three.min.js"></script>
+  <script src="three_guide5.js"></script>
+
+  </html>
